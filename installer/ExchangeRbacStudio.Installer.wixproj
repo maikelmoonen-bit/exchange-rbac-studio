@@ -1,0 +1,18 @@
+<Project Sdk="WixToolset.Sdk/5.0.2">
+
+  <PropertyGroup>
+    <OutputName>ExchangeRbacStudio-$(ProductVersion)-$(RuntimeIdentifier)</OutputName>
+    <ProductVersion Condition="'$(ProductVersion)' == ''">1.0.0</ProductVersion>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-x64</RuntimeIdentifier>
+    <InstallerPlatform>x64</InstallerPlatform>
+    <!-- The self-contained application folder produced by build.ps1 (dotnet publish). -->
+    <AppPublishDir Condition="'$(AppPublishDir)' == ''">$(MSBuildThisFileDirectory)..\artifacts\publish\$(RuntimeIdentifier)\</AppPublishDir>
+    <DefineConstants>AppPublishDir=$(AppPublishDir);ProductVersion=$(ProductVersion);RepositoryRoot=$(MSBuildThisFileDirectory)..</DefineConstants>
+    <SuppressValidation>false</SuppressValidation>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="WixToolset.UI.wixext" />
+  </ItemGroup>
+
+</Project>

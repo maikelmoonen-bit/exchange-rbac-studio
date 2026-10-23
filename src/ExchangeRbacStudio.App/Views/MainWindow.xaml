@@ -1,0 +1,189 @@
+<ui:FluentWindow x:Class="ExchangeRbacStudio.App.Views.MainWindow"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                 xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                 xmlns:vm="clr-namespace:ExchangeRbacStudio.App.ViewModels"
+                 xmlns:controls="clr-namespace:ExchangeRbacStudio.App.Controls"
+                 mc:Ignorable="d"
+                 d:DataContext="{d:DesignInstance Type=vm:ShellViewModel}"
+                 Title="Exchange RBAC Studio"
+                 Width="1400" Height="880" MinWidth="960" MinHeight="620"
+                 WindowStartupLocation="CenterScreen"
+                 ExtendsContentIntoTitleBar="True"
+                 WindowBackdropType="Mica"
+                 WindowCornerPreference="Round"
+                 AutomationProperties.AutomationId="MainWindow">
+
+    <ui:FluentWindow.InputBindings>
+        <KeyBinding Key="D1" Modifiers="Control" Command="{Binding NavigateToCommand}" CommandParameter="Dashboard" />
+        <KeyBinding Key="D2" Modifiers="Control" Command="{Binding NavigateToCommand}" CommandParameter="Applications" />
+        <KeyBinding Key="D3" Modifiers="Control" Command="{Binding NavigateToCommand}" CommandParameter="Scopes" />
+        <KeyBinding Key="D4" Modifiers="Control" Command="{Binding NavigateToCommand}" CommandParameter="RoleAssignments" />
+        <KeyBinding Key="D5" Modifiers="Control" Command="{Binding NavigateToCommand}" CommandParameter="AuthorizationTester" />
+        <KeyBinding Key="D6" Modifiers="Control" Command="{Binding NavigateToCommand}" CommandParameter="ChangeHistory" />
+        <KeyBinding Key="D7" Modifiers="Control" Command="{Binding NavigateToCommand}" CommandParameter="Settings" />
+        <KeyBinding Key="N" Modifiers="Control" Command="{Binding ConfigureAccessCommand}" />
+        <KeyBinding Key="F5" Command="{Binding RefreshCommand}" />
+    </ui:FluentWindow.InputBindings>
+
+    <ui:FluentWindow.Resources>
+        <DataTemplate x:Key="NavItemTemplate" DataType="{x:Type vm:NavItem}">
+            <Grid ToolTip="{Binding ToolTip}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <ui:SymbolIcon Symbol="{Binding Symbol}" FontSize="20" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                <TextBlock Grid.Column="1" Text="{Binding Title}" Margin="12,0,0,0" VerticalAlignment="Center" FontSize="14"
+                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" TextTrimming="CharacterEllipsis"
+                           Visibility="{Binding DataContext.IsPaneCompact, RelativeSource={RelativeSource AncestorType=ui:FluentWindow}, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}" />
+            </Grid>
+        </DataTemplate>
+    </ui:FluentWindow.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <ui:TitleBar Grid.Row="0" Title="Exchange RBAC Studio" Height="44">
+            <ui:TitleBar.Icon>
+                <ui:ImageIcon Source="pack://application:,,,/ExchangeRbacStudio;component/Assets/AppIcon.png" Width="18" Height="18" />
+            </ui:TitleBar.Icon>
+        </ui:TitleBar>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition>
+                    <ColumnDefinition.Style>
+                        <Style TargetType="ColumnDefinition">
+                            <Setter Property="Width" Value="256" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsPaneCompact}" Value="True">
+                                    <Setter Property="Width" Value="68" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ColumnDefinition.Style>
+                </ColumnDefinition>
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Sidebar navigation -->
+            <!-- Logical (tab) order matches visual order: primary action, main navigation, footer navigation. -->
+            <Grid Grid.Column="0" Margin="12,4,10,12">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <ui:Button Grid.Row="0" Appearance="Primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Height="40" Margin="0,4,0,18"
+                           Icon="{ui:SymbolIcon Add24}" Command="{Binding ConfigureAccessCommand}" ToolTip="Configure scoped application access (Ctrl+N)"
+                           AutomationProperties.Name="Configure scoped access" AutomationProperties.AutomationId="ConfigureAccessButton">
+                    <TextBlock Text="Configure scoped access" Visibility="{Binding IsPaneCompact, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}" />
+                </ui:Button>
+
+                <ListBox Grid.Row="1" ItemsSource="{Binding NavItems}" SelectedItem="{Binding SelectedNavItem}"
+                         Style="{StaticResource NavigationListBox}" ItemContainerStyle="{StaticResource NavigationItem}" ItemTemplate="{StaticResource NavItemTemplate}"
+                         AutomationProperties.Name="Main navigation" AutomationProperties.AutomationId="MainNavigation" />
+
+                <StackPanel Grid.Row="2">
+                    <Border Style="{StaticResource Divider}" Margin="4,8" />
+                    <ListBox ItemsSource="{Binding FooterNavItems}" SelectedItem="{Binding SelectedFooterNavItem}"
+                             Style="{StaticResource NavigationListBox}" ItemContainerStyle="{StaticResource NavigationItem}" ItemTemplate="{StaticResource NavItemTemplate}"
+                             AutomationProperties.Name="Footer navigation" />
+                </StackPanel>
+            </Grid>
+
+            <!-- Content -->
+            <Border Grid.Column="1" CornerRadius="8,0,0,0" BorderThickness="1,1,0,0" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    Background="{DynamicResource LayerFillColorDefaultBrush}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Session bar -->
+                    <Border Grid.Row="0" DataContext="{Binding Session}" Padding="24,12" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
+                            AutomationProperties.AutomationId="SessionBar" AutomationProperties.Name="Session">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" MinWidth="200" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Border Width="36" Height="36" CornerRadius="8" Background="{DynamicResource SubtleFillColorSecondaryBrush}">
+                                    <ui:SymbolIcon Symbol="Building24" FontSize="20" Foreground="{DynamicResource SystemAccentColorPrimaryBrush}" />
+                                </Border>
+                                <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding TenantName}" FontWeight="SemiBold" FontSize="14" Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                                   TextTrimming="CharacterEllipsis" MaxWidth="260" AutomationProperties.AutomationId="TenantName" />
+                                        <TextBlock Text="{Binding EnvironmentName, StringFormat='·  {0}'}" Margin="8,0,0,0" FontSize="12" VerticalAlignment="Center"
+                                                   TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextFillColorSecondaryBrush}" ToolTip="Cloud environment" />
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Visibility="{Binding TenantId, Converter={StaticResource NullToVisibility}}">
+                                        <TextBlock Text="{Binding TenantId}" FontFamily="{StaticResource MonoFont}" FontSize="11.5" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                   VerticalAlignment="Center" AutomationProperties.AutomationId="TenantId" ToolTip="Tenant ID" />
+                                        <ui:Button Appearance="Transparent" Padding="4,0" Margin="4,0,0,0" Height="20" Command="{Binding CopyTenantIdCommand}"
+                                                   ToolTip="Copy tenant ID" AutomationProperties.Name="Copy tenant ID" Icon="{ui:SymbolIcon Copy16}" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="16,0">
+                                <StackPanel Orientation="Horizontal">
+                                    <controls:StatusBadge Kind="{Binding GraphKind}" Text="{Binding GraphLabel}" ToolTip="{Binding GraphToolTip}" Margin="0,0,8,0"
+                                                          AutomationProperties.AutomationId="GraphStatus" AutomationProperties.Name="{Binding GraphLabel}" />
+                                    <controls:StatusBadge Kind="{Binding ExchangeKind}" Text="{Binding ExchangeLabel}" ToolTip="{Binding ExchangeToolTip}"
+                                                          AutomationProperties.AutomationId="ExchangeStatus" AutomationProperties.Name="{Binding ExchangeLabel}" />
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="2,4,0,0" Visibility="{Binding Administrator, Converter={StaticResource NullToVisibility}}" ToolTip="Signed-in administrator">
+                                    <ui:SymbolIcon Symbol="Person16" FontSize="13" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                    <TextBlock Text="{Binding Administrator}" Margin="6,0,0,0" VerticalAlignment="Center" FontSize="12" MaxWidth="300"
+                                               TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextFillColorSecondaryBrush}" AutomationProperties.AutomationId="Administrator" />
+                                </StackPanel>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                <ui:ProgressRing Width="18" Height="18" IsIndeterminate="True" Margin="0,0,10,0" Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}" />
+                                <ui:Button Appearance="Primary" Content="Connect" Icon="{ui:SymbolIcon PlugConnected24}" Command="{Binding ConnectCommand}"
+                                           Visibility="{Binding IsConnected, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}"
+                                           AutomationProperties.AutomationId="ConnectButton" ToolTip="Sign in to Microsoft Entra ID and Exchange Online" />
+                                <ui:Button Content="Reconnect" Icon="{ui:SymbolIcon ArrowSync24}" Command="{Binding ReconnectCommand}" Margin="8,0,0,0"
+                                           Visibility="{Binding IsAnyConnected, Converter={StaticResource BoolToVisibility}}" AutomationProperties.Name="Reconnect and revalidate privileges"
+                                           ToolTip="Reconnect and revalidate: re-establishes the Exchange Online session so newly activated roles (Privileged Identity Management) take effect" />
+                                <ui:Button Content="Disconnect" Icon="{ui:SymbolIcon PlugDisconnected24}" Command="{Binding DisconnectCommand}" Margin="8,0,0,0"
+                                           Visibility="{Binding IsAnyConnected, Converter={StaticResource BoolToVisibility}}" AutomationProperties.AutomationId="DisconnectButton" />
+                                <ui:Button Appearance="Transparent" Icon="{ui:SymbolIcon DarkTheme24}" Command="{Binding ToggleThemeCommand}" Margin="8,0,0,0"
+                                           ToolTip="Toggle light and dark theme" AutomationProperties.Name="Toggle theme" AutomationProperties.AutomationId="ThemeToggle" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <ui:InfoBar Grid.Row="1" DataContext="{Binding Session}" Margin="24,12,24,0" Severity="Warning" IsClosable="False"
+                                Title="Insufficient Exchange privileges" Message="{Binding PrivilegeGapText}" IsOpen="{Binding HasPrivilegeGap}" />
+
+                    <ContentControl Grid.Row="2" x:Name="PageHost" Content="{Binding CurrentPage, NotifyOnTargetUpdated=True}" Focusable="False"
+                                    IsTabStop="False" AutomationProperties.AutomationId="PageHost">
+                        <ContentControl.RenderTransform>
+                            <TranslateTransform />
+                        </ContentControl.RenderTransform>
+                        <ContentControl.Triggers>
+                            <EventTrigger RoutedEvent="Binding.TargetUpdated">
+                                <BeginStoryboard Storyboard="{StaticResource PageEnterStoryboard}" />
+                            </EventTrigger>
+                        </ContentControl.Triggers>
+                    </ContentControl>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</ui:FluentWindow>

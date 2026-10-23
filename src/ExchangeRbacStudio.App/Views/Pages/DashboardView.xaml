@@ -1,0 +1,194 @@
+<UserControl x:Class="ExchangeRbacStudio.App.Views.Pages.DashboardView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:vm="clr-namespace:ExchangeRbacStudio.App.ViewModels.Pages"
+             xmlns:controls="clr-namespace:ExchangeRbacStudio.App.Controls"
+             mc:Ignorable="d" d:DataContext="{d:DesignInstance Type=vm:DashboardViewModel}"
+             AutomationProperties.AutomationId="DashboardPage">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="{StaticResource PagePadding}">
+            <Grid Margin="0,0,0,20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock Text="{Binding Title}" Style="{StaticResource PageTitleText}" AutomationProperties.HeadingLevel="Level1" />
+                    <TextBlock Text="{Binding Subtitle}" Style="{StaticResource PageSubtitleText}" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
+                    <TextBlock Text="{Binding LastRefreshed}" Style="{StaticResource CaptionText}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                    <ui:Button Content="Refresh" Icon="{ui:SymbolIcon ArrowClockwise24}" Command="{Binding RefreshCommand}" Margin="0,0,8,0"
+                               IsEnabled="{Binding IsExchangeConnected}" ToolTip="Reload from Exchange Online and Microsoft Graph (F5)" AutomationProperties.AutomationId="DashboardRefresh" />
+                    <ui:Button Appearance="Primary" Content="Configure scoped access" Icon="{ui:SymbolIcon Add24}" Command="{Binding ConfigureAccessCommand}" />
+                </StackPanel>
+            </Grid>
+
+            <controls:ErrorPanel Error="{Binding Error}" />
+
+            <!-- Disconnected -->
+            <Border Style="{StaticResource Card}" Visibility="{Binding IsExchangeConnected, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}">
+                <controls:EmptyState Symbol="PlugDisconnected24" Title="Connect to a Microsoft 365 tenant"
+                                     Message="Sign in to Microsoft Entra ID and Exchange Online to discover application RBAC configuration. All figures on this page are read from your tenant; nothing is estimated.">
+                    <ui:Button Appearance="Primary" Content="Connect" Icon="{ui:SymbolIcon PlugConnected24}"
+                               Command="{Binding DataContext.Session.ConnectCommand, RelativeSource={RelativeSource AncestorType=Window}}" />
+                </controls:EmptyState>
+            </Border>
+
+            <!-- Connected -->
+            <StackPanel Visibility="{Binding IsExchangeConnected, Converter={StaticResource BoolToVisibility}}">
+                <controls:LoadingIndicator Text="{Binding BusyMessage}" Margin="0,0,0,16" Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}" />
+                <ui:InfoBar Title="Configuration changed" Message="Changes were made in this session. Refresh to load the current configuration." Severity="Informational"
+                            IsOpen="{Binding IsStale}" IsClosable="False" Margin="0,0,0,16" />
+
+                <UniformGrid Columns="4" Margin="-6,0,-6,10">
+                    <ui:CardAction Margin="6" VerticalAlignment="Stretch" VerticalContentAlignment="Top" Icon="{ui:SymbolIcon AppGeneric24}" Command="{Binding OpenCommand}" CommandParameter="Applications"
+                                   AutomationProperties.Name="Exchange RBAC service principals" AutomationProperties.AutomationId="MetricServicePrincipals">
+                        <StackPanel>
+                            <TextBlock Text="Exchange RBAC service principals" Style="{StaticResource CaptionText}" />
+                            <TextBlock Text="{Binding ServicePrincipalCount}" Style="{StaticResource MetricValueText}" />
+                            <TextBlock Text="Pointers to Entra service principals" Style="{StaticResource CaptionText}" />
+                        </StackPanel>
+                    </ui:CardAction>
+                    <ui:CardAction Margin="6" VerticalAlignment="Stretch" VerticalContentAlignment="Top" Icon="{ui:SymbolIcon Target24}" Command="{Binding OpenCommand}" CommandParameter="Scopes"
+                                   AutomationProperties.Name="Management scopes" AutomationProperties.AutomationId="MetricScopes">
+                        <StackPanel>
+                            <TextBlock Text="Management scopes" Style="{StaticResource CaptionText}" />
+                            <TextBlock Text="{Binding ScopeCount}" Style="{StaticResource MetricValueText}" />
+                            <TextBlock Text="{Binding ScopeDetail}" Style="{StaticResource CaptionText}" />
+                        </StackPanel>
+                    </ui:CardAction>
+                    <ui:CardAction Margin="6" VerticalAlignment="Stretch" VerticalContentAlignment="Top" Icon="{ui:SymbolIcon Key24}" Command="{Binding OpenCommand}" CommandParameter="RoleAssignments"
+                                   AutomationProperties.Name="Application role assignments" AutomationProperties.AutomationId="MetricAssignments">
+                        <StackPanel>
+                            <TextBlock Text="Application role assignments" Style="{StaticResource CaptionText}" />
+                            <TextBlock Text="{Binding AssignmentCount}" Style="{StaticResource MetricValueText}" />
+                            <TextBlock Text="{Binding AssignmentDetail}" Style="{StaticResource CaptionText}" />
+                        </StackPanel>
+                    </ui:CardAction>
+                    <ui:CardAction Margin="6" VerticalAlignment="Stretch" VerticalContentAlignment="Top" Icon="{ui:SymbolIcon ShieldError24}" Command="{Binding OpenCommand}" CommandParameter="Applications"
+                                   AutomationProperties.Name="Potentially unsafe configurations" AutomationProperties.AutomationId="MetricUnsafe">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Potentially unsafe configurations" Style="{StaticResource CaptionText}" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding UnsafeCount}" Style="{StaticResource MetricValueText}" />
+                                <controls:StatusGlyph Kind="{Binding UnsafeKind}" Margin="10,6,0,0" />
+                            </StackPanel>
+                            <TextBlock Text="{Binding UnsafeDetail}" Style="{StaticResource CaptionText}" />
+                        </StackPanel>
+                    </ui:CardAction>
+                </UniformGrid>
+
+                <ui:InfoBar Severity="Warning" IsClosable="False" Title="Partial analysis" Message="{Binding EntraAnalysisNote}" Margin="0,0,0,16"
+                            IsOpen="True" Visibility="{Binding EntraAnalysisNote, Converter={StaticResource NullToVisibility}}" />
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*" />
+                        <ColumnDefinition Width="16" />
+                        <ColumnDefinition Width="*" MinWidth="300" />
+                    </Grid.ColumnDefinitions>
+
+                    <Border Style="{StaticResource Card}" VerticalAlignment="Top">
+                        <StackPanel>
+                            <TextBlock Text="Potentially unsafe configurations" Style="{StaticResource SectionTitleText}" AutomationProperties.HeadingLevel="Level2" />
+                            <TextBlock Text="Derived from the retrieved Exchange RBAC and Microsoft Entra ID data." Style="{StaticResource CaptionText}" Margin="0,4,0,12" />
+                            <controls:EmptyState Symbol="ShieldCheckmark24" Margin="0,12" Title="No unsafe conditions detected"
+                                                 Message="No organization-wide assignments, broad scope filters or overlapping tenant-wide permissions were found in the retrieved data."
+                                                 Visibility="{Binding Findings.Count, Converter={StaticResource CountToVisibility}, ConverterParameter=Invert}" />
+                            <ItemsControl ItemsSource="{Binding Findings}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type vm:FindingItem}">
+                                        <Border Style="{StaticResource SubtleCard}" Margin="0,0,0,8">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <controls:StatusGlyph Kind="{Binding Kind}" VerticalAlignment="Top" />
+                                                <StackPanel Grid.Column="1" Margin="10,0,8,0">
+                                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                                    <TextBlock Text="{Binding Detail}" Style="{StaticResource CaptionText}" Margin="0,2,0,0" />
+                                                    <TextBlock Text="{Binding Remediation}" Style="{StaticResource CaptionText}" Margin="0,4,0,0" FontStyle="Italic"
+                                                               Visibility="{Binding Remediation, Converter={StaticResource NullToVisibility}}" />
+                                                </StackPanel>
+                                                <controls:StatusBadge Grid.Column="2" Kind="{Binding Kind}" Text="{Binding Category}" VerticalAlignment="Top" />
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                    <StackPanel Grid.Column="2">
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="Connection health" Style="{StaticResource SectionTitleText}" AutomationProperties.HeadingLevel="Level2" />
+                                <Grid Margin="0,14,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <controls:StatusGlyph Kind="{Binding GraphHealthKind}" VerticalAlignment="Top" />
+                                    <StackPanel Grid.Column="1" Margin="10,0,0,0">
+                                        <TextBlock><Run Text="Microsoft Entra ID: " FontWeight="SemiBold" /><Run Text="{Binding GraphHealth, Mode=OneWay}" /></TextBlock>
+                                        <TextBlock Text="{Binding GraphHealthDetail}" Style="{StaticResource CaptionText}" />
+                                    </StackPanel>
+                                </Grid>
+                                <Grid Margin="0,12,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <controls:StatusGlyph Kind="{Binding ExchangeHealthKind}" VerticalAlignment="Top" />
+                                    <StackPanel Grid.Column="1" Margin="10,0,0,0">
+                                        <TextBlock><Run Text="Exchange Online: " FontWeight="SemiBold" /><Run Text="{Binding ExchangeHealth, Mode=OneWay}" /></TextBlock>
+                                        <TextBlock Text="{Binding ExchangeHealthDetail}" Style="{StaticResource CaptionText}" />
+                                    </StackPanel>
+                                </Grid>
+                                <TextBlock Text="{Binding HostDetail}" Style="{StaticResource CaptionText}" Margin="30,12,0,0"
+                                           Visibility="{Binding HostDetail, Converter={StaticResource NullToVisibility}}" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <Grid>
+                                    <TextBlock Text="Recent operations" Style="{StaticResource SectionTitleText}" AutomationProperties.HeadingLevel="Level2" />
+                                    <ui:Button HorizontalAlignment="Right" Appearance="Transparent" Content="View all" Command="{Binding OpenCommand}" CommandParameter="ChangeHistory" />
+                                </Grid>
+                                <TextBlock Text="From the local audit log on this computer." Style="{StaticResource CaptionText}" Margin="0,2,0,10" />
+                                <TextBlock Text="No operations recorded for this tenant yet." Style="{StaticResource CaptionText}"
+                                           Visibility="{Binding RecentOperations.Count, Converter={StaticResource CountToVisibility}, ConverterParameter=Invert}" />
+                                <ItemsControl ItemsSource="{Binding RecentOperations}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="{x:Type vm:RecentOperationItem}">
+                                            <Grid Margin="0,0,0,10">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+                                                <controls:StatusGlyph Kind="{Binding Kind}" Width="16" Height="16" VerticalAlignment="Top" Margin="0,2,0,0" />
+                                                <StackPanel Grid.Column="1" Margin="10,0,0,0">
+                                                    <TextBlock Text="{Binding Title}" TextWrapping="Wrap" FontSize="13" />
+                                                    <TextBlock Style="{StaticResource CaptionText}"><Run Text="{Binding Timestamp, Mode=OneWay, Converter={StaticResource LocalTime}}" /><Run Text=" · " /><Run Text="{Binding OutcomeLabel, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding Administrator, Mode=OneWay}" /></TextBlock>
+                                                </StackPanel>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

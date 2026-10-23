@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Exchange RBAC Studio installer (per-machine, Program Files).
+  Installing per-machine keeps the application and its PowerShell host script in an administrator-protected folder.
+  Prerequisites that are NOT installed by this package: PowerShell 7.4+ and the ExchangeOnlineManagement module (3.7.0+).
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+
+  <Package Name="Exchange RBAC Studio"
+           Manufacturer="Exchange RBAC Studio"
+           Version="$(var.ProductVersion)"
+           UpgradeCode="6A3D4F1C-2B8E-4C59-9F3A-7E1D0B5C8A42"
+           Scope="perMachine"
+           Compressed="yes">
+
+    <SummaryInformation Description="Exchange RBAC Studio - administration of Exchange Online RBAC for Applications" />
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of Exchange RBAC Studio is already installed." Schedule="afterInstallInitialize" />
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <Icon Id="AppIcon" SourceFile="$(var.RepositoryRoot)\src\ExchangeRbacStudio.App\Assets\AppIcon.ico" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon" />
+    <Property Id="ARPHELPLINK" Value="https://learn.microsoft.com/exchange/permissions-exo/application-rbac" />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="Exchange RBAC Studio" />
+    </StandardDirectory>
+
+    <!-- Documented WiX shortcut pattern: a dedicated component with an HKCU key path (required by ICE38/ICE43/ICE57 for
+         non-advertised shortcuts). Because the package is per-machine (ALLUSERS=1), ProgramMenuFolder resolves to the
+         all-users Start menu. -->
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Component Id="StartMenuShortcut">
+        <Shortcut Id="ApplicationShortcut"
+                  Name="Exchange RBAC Studio"
+                  Description="Administer Exchange Online RBAC for Applications"
+                  Target="[INSTALLFOLDER]ExchangeRbacStudio.exe"
+                  WorkingDirectory="INSTALLFOLDER"
+                  Icon="AppIcon" />
+        <RegistryValue Root="HKCU" Key="Software\Exchange RBAC Studio" Name="StartMenuShortcut" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </StandardDirectory>
+
+    <Feature Id="Application" Title="Exchange RBAC Studio" Level="1" AllowAbsent="no">
+      <Files Directory="INSTALLFOLDER" Include="$(var.AppPublishDir)**" />
+      <ComponentRef Id="StartMenuShortcut" />
+    </Feature>
+
+    <ui:WixUI Id="WixUI_Minimal" />
+    <WixVariable Id="WixUILicenseRtf" Value="$(var.RepositoryRoot)\installer\License.rtf" />
+  </Package>
+</Wix>

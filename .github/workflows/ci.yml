@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build, test and package
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      # Same pipeline as a local build: restore, build, core + WPF tests, self-contained publish, portable zip and MSI.
+      # Desktop UI automation tests are opt-in and do not run here.
+      - name: Build, test and package
+        shell: pwsh
+        run: ./build.ps1 -Configuration Release

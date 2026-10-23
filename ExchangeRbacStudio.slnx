@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ExchangeRbacStudio.App/ExchangeRbacStudio.App.csproj" />
+    <Project Path="src/ExchangeRbacStudio.Application/ExchangeRbacStudio.Application.csproj" />
+    <Project Path="src/ExchangeRbacStudio.Domain/ExchangeRbacStudio.Domain.csproj" />
+    <Project Path="src/ExchangeRbacStudio.Infrastructure/ExchangeRbacStudio.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ExchangeRbacStudio.App.Tests/ExchangeRbacStudio.App.Tests.csproj" />
+    <Project Path="tests/ExchangeRbacStudio.Tests/ExchangeRbacStudio.Tests.csproj" />
+    <Project Path="tests/ExchangeRbacStudio.TestSupport/ExchangeRbacStudio.TestSupport.csproj" />
+    <Project Path="tests/ExchangeRbacStudio.UiTests/ExchangeRbacStudio.UiTests.csproj" />
+  </Folder>
+</Solution>

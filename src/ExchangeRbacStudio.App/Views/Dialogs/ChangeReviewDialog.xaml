@@ -1,0 +1,151 @@
+<ui:FluentWindow x:Class="ExchangeRbacStudio.App.Views.Dialogs.ChangeReviewDialog"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                 xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                 xmlns:vm="clr-namespace:ExchangeRbacStudio.App.ViewModels.Dialogs"
+                 xmlns:controls="clr-namespace:ExchangeRbacStudio.App.Controls"
+                 mc:Ignorable="d"
+                 d:DataContext="{d:DesignInstance Type=vm:ChangeReviewViewModel}"
+                 Title="{Binding Heading}" Width="900" Height="780" MinWidth="720" MinHeight="560"
+                 WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+                 ExtendsContentIntoTitleBar="True" WindowBackdropType="Mica" WindowCornerPreference="Round"
+                 AutomationProperties.AutomationId="ChangeReviewDialog">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <ui:TitleBar Title="{Binding Heading}" ShowMinimize="False" />
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="28,4,28,20">
+                <TextBlock Text="{Binding Heading}" Style="{StaticResource SectionTitleText}" />
+                <TextBlock Text="{Binding Description}" Style="{StaticResource SecondaryText}" Margin="0,6,0,0" />
+
+                <Border Style="{StaticResource Card}" Margin="0,16,0,12" Padding="16" Background="{DynamicResource SystemFillColorAttentionBackgroundBrush}">
+                    <StackPanel Orientation="Horizontal">
+                        <ui:SymbolIcon Symbol="Building24" FontSize="20" Foreground="{DynamicResource SystemAccentColorPrimaryBrush}" />
+                        <StackPanel Margin="12,0,0,0">
+                            <TextBlock Text="Target tenant" Style="{StaticResource LabelText}" />
+                            <TextBlock FontWeight="SemiBold"><Run Text="{Binding TenantName, Mode=OneWay}" /><Run Text="  " /><Run Text="{Binding TenantId, Mode=OneWay}" FontFamily="{StaticResource MonoFont}" FontWeight="Normal" /></TextBlock>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <ItemsControl ItemsSource="{Binding Conflicts}" Visibility="{Binding Conflicts.Count, Converter={StaticResource CountToVisibility}}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <ui:InfoBar Severity="Error" IsOpen="True" IsClosable="False" Title="{Binding Title}" Message="{Binding Detail}" Margin="0,0,0,8" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <ItemsControl ItemsSource="{Binding Notes}" Visibility="{Binding Notes.Count, Converter={StaticResource CountToVisibility}}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <ui:InfoBar Severity="Informational" IsOpen="True" IsClosable="False" Message="{Binding}" Margin="0,0,0,8" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <TextBlock Text="Planned operations" Style="{StaticResource SubsectionTitleText}" Margin="0,4,0,8" />
+                <ItemsControl ItemsSource="{Binding Operations}" Visibility="{Binding IsReviewing, Converter={StaticResource BoolToVisibility}}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource SubtleCard}" Margin="0,0,0,8">
+                                <StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <controls:StatusBadge Kind="{Binding DispositionKind}" Text="{Binding DispositionLabel}" />
+                                        <TextBlock Text="{Binding Summary}" Margin="10,0,0,0" VerticalAlignment="Center" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                    <Grid Margin="0,8,0,0" Visibility="{Binding HasDiff, Converter={StaticResource BoolToVisibility}}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="16" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBlock Text="Before" Style="{StaticResource LabelText}" />
+                                            <TextBlock Text="{Binding BeforeState, TargetNullValue='(does not exist)'}" Style="{StaticResource MonoText}" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="After" Style="{StaticResource LabelText}" />
+                                            <TextBlock Text="{Binding AfterState, TargetNullValue='(unchanged)'}" Style="{StaticResource MonoText}" />
+                                        </StackPanel>
+                                    </Grid>
+                                    <TextBox Margin="0,8,0,0" Text="{Binding Command, Mode=OneWay}" Style="{StaticResource ReadOnlyCodeBox}"
+                                             Visibility="{Binding Command, Converter={StaticResource NullToVisibility}}" />
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <ItemsControl ItemsSource="{Binding Steps}" Visibility="{Binding IsReviewing, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="0,0,0,10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <controls:StatusGlyph Kind="{Binding Kind}" VerticalAlignment="Top" />
+                                <StackPanel Grid.Column="1" Margin="10,0,0,0">
+                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding Message}" Style="{StaticResource CaptionText}" />
+                                </StackPanel>
+                                <controls:StatusBadge Grid.Column="2" Kind="{Binding Kind}" Text="{Binding StatusLabel}" VerticalAlignment="Top" />
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <Border Style="{StaticResource SubtleCard}" Margin="0,8,0,0" Visibility="{Binding OutcomeLabel, Converter={StaticResource NullToVisibility}}"
+                        AutomationProperties.LiveSetting="Assertive" AutomationProperties.AutomationId="ChangeOutcome">
+                    <controls:StatusMessage Kind="{Binding OutcomeKind}" Text="{Binding OutcomeLabel}" IsEmphasized="True" />
+                </Border>
+
+                <Expander Header="Equivalent PowerShell" Margin="0,12,0,0" Style="{StaticResource SubtleExpander}">
+                    <Border Style="{StaticResource CodeBlock}" Margin="0,8,0,0">
+                        <StackPanel>
+                            <TextBox Text="{Binding Script, Mode=OneWay}" Style="{StaticResource ReadOnlyCodeBox}" TextWrapping="NoWrap" HorizontalScrollBarVisibility="Auto" />
+                            <ui:Button Content="Copy" Icon="{ui:SymbolIcon Copy24}" Command="{Binding CopyScriptCommand}" Margin="0,10,0,0" />
+                        </StackPanel>
+                    </Border>
+                </Expander>
+
+                <controls:ErrorPanel Error="{Binding Error}" Margin="0,16,0,0" />
+
+                <Border Style="{StaticResource Card}" Margin="0,16,0,0" Visibility="{Binding IsReviewing, Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel>
+                        <TextBlock Text="Confirmation" Style="{StaticResource SubsectionTitleText}" />
+                        <CheckBox Margin="0,8,0,0" IsChecked="{Binding IsConfirmed}" AutomationProperties.AutomationId="ConfirmChangeCheckBox">
+                            <TextBlock TextWrapping="Wrap"><Run Text="I have reviewed these changes for tenant " /><Run Text="{Binding TenantName, Mode=OneWay}" FontWeight="SemiBold" /><Run Text=" and authorize their execution." /></TextBlock>
+                        </CheckBox>
+                        <StackPanel Visibility="{Binding RequiresTypedConfirmation, Converter={StaticResource BoolToVisibility}}" Margin="0,12,0,0">
+                            <TextBlock Style="{StaticResource CaptionText}"><Run Text="Type " /><Run Text="{Binding TypedConfirmationText, Mode=OneWay}" FontWeight="SemiBold" FontFamily="{StaticResource MonoFont}" /><Run Text=" to confirm this destructive change." /></TextBlock>
+                            <ui:TextBox Margin="0,6,0,0" Text="{Binding ConfirmationInput, UpdateSourceTrigger=PropertyChanged}" FontFamily="{StaticResource MonoFont}"
+                                        AutomationProperties.Name="Type the object name to confirm" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Row="2" Padding="28,16" Background="{DynamicResource SolidBackgroundFillColorBaseBrush}" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}">
+            <Grid>
+                <controls:LoadingIndicator Text="{Binding BusyMessage}" Visibility="{Binding IsExecuting, Converter={StaticResource BoolToVisibility}}" VerticalAlignment="Center" />
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <ui:Button Content="Stop after current step" Command="{Binding StopAfterCurrentStepCommand}" Margin="0,0,8,0"
+                               Visibility="{Binding IsExecuting, Converter={StaticResource BoolToVisibility}}" />
+                    <ui:Button Content="Close" Command="{Binding CloseCommand}" Margin="0,0,8,0" IsCancel="True" />
+                    <ui:Button Appearance="Danger" Content="Execute" Icon="{ui:SymbolIcon Play24}" Command="{Binding ExecuteCommand}"
+                               AutomationProperties.AutomationId="ExecuteChangeButton" />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</ui:FluentWindow>

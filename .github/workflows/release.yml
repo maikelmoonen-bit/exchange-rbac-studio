@@ -1,0 +1,47 @@
+name: Release
+
+# Push a tag such as v1.0.1 to build, test and package that version. The release is created as a draft so it can be
+# reviewed before it is published.
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and draft release
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Determine version from tag
+        id: version
+        shell: pwsh
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          $version = $env:TAG.TrimStart('v')
+          if ($version -notmatch '^\d+\.\d+\.\d+$') { throw "Tag '$env:TAG' is not of the form vMAJOR.MINOR.PATCH." }
+          "value=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Build, test and package
+        shell: pwsh
+        run: ./build.ps1 -Configuration Release -Version ${{ steps.version.outputs.value }}
+
+      - name: Create draft release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          $files = @(Get-ChildItem artifacts/installer/*.msi, artifacts/*-portable.zip | ForEach-Object FullName)
+          if ($files.Count -ne 2) { throw "Expected one MSI and one portable zip, found: $($files -join ', ')" }
+          gh release create $env:TAG @files --draft --generate-notes --title "Exchange RBAC Studio $env:VERSION"

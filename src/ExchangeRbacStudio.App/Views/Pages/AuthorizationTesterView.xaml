@@ -1,0 +1,131 @@
+<UserControl x:Class="ExchangeRbacStudio.App.Views.Pages.AuthorizationTesterView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:vm="clr-namespace:ExchangeRbacStudio.App.ViewModels.Pages"
+             xmlns:controls="clr-namespace:ExchangeRbacStudio.App.Controls"
+             mc:Ignorable="d" d:DataContext="{d:DesignInstance Type=vm:AuthorizationTesterViewModel}"
+             AutomationProperties.AutomationId="AuthorizationTesterPage">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="{StaticResource PagePadding}">
+            <StackPanel Margin="0,0,0,20">
+                <TextBlock Text="{Binding Title}" Style="{StaticResource PageTitleText}" AutomationProperties.HeadingLevel="Level1" />
+                <TextBlock Text="{Binding Subtitle}" Style="{StaticResource PageSubtitleText}" />
+            </StackPanel>
+
+            <controls:ErrorPanel Error="{Binding Error}" />
+
+            <Border Style="{StaticResource Card}" Visibility="{Binding IsExchangeConnected, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}">
+                <controls:EmptyState Symbol="PlugDisconnected24" Title="Not connected" Message="Connect to Exchange Online to run Test-ServicePrincipalAuthorization.">
+                    <ui:Button Appearance="Primary" Content="Connect" Command="{Binding DataContext.Session.ConnectCommand, RelativeSource={RelativeSource AncestorType=Window}}" />
+                </controls:EmptyState>
+            </Border>
+
+            <StackPanel Visibility="{Binding IsExchangeConnected, Converter={StaticResource BoolToVisibility}}">
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="1. Application and roles" Style="{StaticResource SubsectionTitleText}" />
+                        <ComboBox Margin="0,10,0,0" ItemsSource="{Binding Applications}" SelectedItem="{Binding SelectedApplication}" MaxWidth="640" HorizontalAlignment="Left" MinWidth="420"
+                                  AutomationProperties.Name="Application" AutomationProperties.AutomationId="TesterApplication">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:ApplicationChoice}">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" />
+                                        <TextBlock Text="{Binding Detail}" Style="{StaticResource CaptionText}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                        <TextBlock Text="Roles to evaluate (each role is evaluated separately)" Style="{StaticResource LabelText}" Margin="0,14,0,4" />
+                        <TextBlock Text="The selected application has no assigned Exchange application roles." Style="{StaticResource CaptionText}"
+                                   Visibility="{Binding Roles.Count, Converter={StaticResource CountToVisibility}, ConverterParameter=Invert}" />
+                        <ItemsControl ItemsSource="{Binding Roles}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:RoleChoice}">
+                                    <CheckBox Content="{Binding Role}" IsChecked="{Binding IsSelected}" Margin="0,0,16,6" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="2. Mailboxes that SHOULD be in scope (positive tests)" Style="{StaticResource SubsectionTitleText}" />
+                        <ContentControl Content="{Binding PositivePicker}" Margin="0,12,0,0" Focusable="False" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="3. Mailboxes that should NOT be in scope (negative tests)" Style="{StaticResource SubsectionTitleText}" />
+                        <ContentControl Content="{Binding NegativePicker}" Margin="0,12,0,0" Focusable="False" />
+                    </StackPanel>
+                </Border>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                    <ui:Button Appearance="Primary" Content="Run authorization tests" Icon="{ui:SymbolIcon Beaker24}" Command="{Binding RunTestsCommand}"
+                               AutomationProperties.AutomationId="RunTests" />
+                    <controls:LoadingIndicator Text="{Binding BusyMessage}" Margin="16,0,0,0" Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}" />
+                </StackPanel>
+
+                <Border Style="{StaticResource Card}" Visibility="{Binding Results.Count, Converter={StaticResource CountToVisibility}}">
+                    <StackPanel>
+                        <controls:StatusMessage Kind="{Binding OverallKind}" Text="{Binding OverallLabel}" IsEmphasized="True" />
+                        <ui:InfoBar Margin="0,12,0,0" Severity="Warning" IsClosable="False" IsOpen="True" Title="Microsoft Entra ID" Message="{Binding EntraNote}"
+                                    Visibility="{Binding EntraNote, Converter={StaticResource NullToVisibility}}" />
+                        <DataGrid ItemsSource="{Binding Results}" Style="{StaticResource StudioDataGrid}" Margin="0,12,0,0" MaxHeight="520" RowHeight="56"
+                                  AutomationProperties.Name="Test results" AutomationProperties.AutomationId="TestResults">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Mailbox" Binding="{Binding Mailbox}" Width="1.4*" />
+                                <DataGridTextColumn Header="Expectation" Binding="{Binding Expectation}" Width="Auto" />
+                                <DataGridTextColumn Header="Role" Binding="{Binding Role}" Width="1.2*" />
+                                <DataGridTextColumn Header="Exchange RBAC" Binding="{Binding ExchangeResult}" Width="Auto" />
+                                <DataGridTextColumn Header="Entra ID" Binding="{Binding EntraOverride}" Width="Auto" />
+                                <DataGridTemplateColumn Header="Verdict" Width="Auto" SortMemberPath="Verdict">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type vm:TestOutcomeItem}">
+                                            <controls:StatusBadge Kind="{Binding Kind}" Text="{Binding Verdict}" Margin="4,0" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="Explanation" Width="2.4*">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type vm:TestOutcomeItem}">
+                                            <TextBlock Text="{Binding Explanation}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="4,0" FontSize="12.5" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                        <ItemsControl ItemsSource="{Binding Errors}" Margin="0,8,0,0">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding}" Style="{StaticResource CaptionText}" Foreground="{DynamicResource SystemFillColorCriticalBrush}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Text="Important" Style="{StaticResource LabelText}" Margin="0,14,0,4" />
+                        <ItemsControl ItemsSource="{Binding Notes}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                        <ui:SymbolIcon Symbol="Info24" FontSize="14" Foreground="{DynamicResource SystemAccentColorPrimaryBrush}" VerticalAlignment="Top" />
+                                        <TextBlock Text="{Binding}" Style="{StaticResource CaptionText}" Margin="8,0,0,0" MaxWidth="1000" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

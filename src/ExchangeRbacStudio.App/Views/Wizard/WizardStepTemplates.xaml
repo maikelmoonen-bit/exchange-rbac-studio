@@ -1,0 +1,632 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                    xmlns:controls="clr-namespace:ExchangeRbacStudio.App.Controls"
+                    xmlns:wizard="clr-namespace:ExchangeRbacStudio.App.ViewModels.Wizard"
+                    xmlns:pages="clr-namespace:ExchangeRbacStudio.App.ViewModels.Pages"
+                    xmlns:shared="clr-namespace:ExchangeRbacStudio.App.ViewModels.Shared"
+                    xmlns:planning="clr-namespace:ExchangeRbacStudio.Domain.Planning;assembly=ExchangeRbacStudio.Domain">
+
+    <!-- Shared item templates -->
+    <DataTemplate x:Key="CheckItemTemplate" DataType="{x:Type shared:CheckItem}">
+        <Border Style="{StaticResource SubtleCard}" Margin="0,0,0,8">
+            <StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <controls:StatusGlyph Kind="{Binding Kind}" VerticalAlignment="Top" />
+                    <StackPanel Grid.Column="1" Margin="10,0,8,0">
+                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding Summary}" Style="{StaticResource CaptionText}" Margin="0,2,0,0" />
+                    </StackPanel>
+                    <controls:StatusBadge Grid.Column="2" Kind="{Binding Kind}" Text="{Binding StatusLabel}" VerticalAlignment="Top" />
+                </Grid>
+                <Expander Margin="30,6,0,0" Header="Details and remediation" IsExpanded="{Binding IsExpanded}" Style="{StaticResource SubtleExpander}" Visibility="{Binding HasMore, Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel Margin="0,6,0,0">
+                        <TextBox Text="{Binding Detail, Mode=OneWay}" Style="{StaticResource ReadOnlyCodeBox}" Visibility="{Binding Detail, Converter={StaticResource NullToVisibility}}" />
+                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0" Visibility="{Binding Remediation, Converter={StaticResource NullToVisibility}}">
+                            <ui:SymbolIcon Symbol="Lightbulb24" FontSize="16" VerticalAlignment="Top" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                            <TextBlock Text="{Binding Remediation}" Style="{StaticResource CaptionText}" Margin="6,0,0,0" MaxWidth="820" />
+                        </StackPanel>
+                    </StackPanel>
+                </Expander>
+            </StackPanel>
+        </Border>
+    </DataTemplate>
+
+    <DataTemplate x:Key="OperationItemTemplate" DataType="{x:Type shared:OperationItem}">
+        <Border Style="{StaticResource SubtleCard}" Margin="0,0,0,8">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <controls:StatusBadge Kind="{Binding DispositionKind}" Text="{Binding DispositionLabel}" />
+                    <TextBlock Text="{Binding Summary}" Margin="10,0,0,0" VerticalAlignment="Center" FontWeight="SemiBold" TextWrapping="Wrap" MaxWidth="780" />
+                </StackPanel>
+                <Grid Margin="0,8,0,0" Visibility="{Binding HasDiff, Converter={StaticResource BoolToVisibility}}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="16" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="Before" Style="{StaticResource LabelText}" />
+                        <TextBlock Text="{Binding BeforeState, TargetNullValue='(does not exist)'}" Style="{StaticResource MonoText}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="After" Style="{StaticResource LabelText}" />
+                        <TextBlock Text="{Binding AfterState, TargetNullValue='(unchanged)'}" Style="{StaticResource MonoText}" />
+                    </StackPanel>
+                </Grid>
+                <TextBox Margin="0,8,0,0" Text="{Binding Command, Mode=OneWay}" Style="{StaticResource ReadOnlyCodeBox}" Visibility="{Binding Command, Converter={StaticResource NullToVisibility}}" />
+            </StackPanel>
+        </Border>
+    </DataTemplate>
+
+    <DataTemplate x:Key="RecipientListTemplate" DataType="{x:Type pages:RecipientItem}">
+        <StackPanel Orientation="Horizontal" Margin="0,2">
+            <ui:SymbolIcon Symbol="Mail24" FontSize="14" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+            <TextBlock Margin="8,0,0,0"><Run Text="{Binding DisplayName, Mode=OneWay}" FontWeight="SemiBold" /><Run Text="  " /><Run Text="{Binding Address, Mode=OneWay}" /><Run Text="  " /><Run Text="{Binding Type, Mode=OneWay}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" /></TextBlock>
+        </StackPanel>
+    </DataTemplate>
+
+    <!-- Step 1: application -->
+    <DataTemplate DataType="{x:Type wizard:ApplicationStepViewModel}">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" MinWidth="320" />
+                <ColumnDefinition Width="20" />
+                <ColumnDefinition Width="*" MinWidth="360" />
+            </Grid.ColumnDefinitions>
+            <StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <ui:TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="Display name, application ID or service principal object ID"
+                                Icon="{ui:SymbolIcon Search24}" ClearButtonEnabled="True" AutomationProperties.Name="Application search" AutomationProperties.AutomationId="ApplicationSearch">
+                        <ui:TextBox.InputBindings>
+                            <KeyBinding Key="Enter" Command="{Binding SearchCommand}" />
+                        </ui:TextBox.InputBindings>
+                    </ui:TextBox>
+                    <ui:Button Grid.Column="1" Margin="8,0,0,0" Content="Search" Command="{Binding SearchCommand}" />
+                </Grid>
+                <TextBlock Style="{StaticResource CaptionText}" Margin="0,8,0,0"
+                           Text="Enter at least two characters. Pasting an App Registration object ID is detected and explained; Exchange RBAC requires the Enterprise Application (service principal) object ID." />
+                <TextBlock Style="{StaticResource CaptionText}" Margin="0,12,0,0" Text="No Enterprise Applications match the search.">
+                    <TextBlock.Visibility>
+                        <MultiBinding Converter="{x:Static wizard:WizardConverters.EmptyAfterSearch}">
+                            <Binding Path="HasSearched" />
+                            <Binding Path="Results.Count" />
+                        </MultiBinding>
+                    </TextBlock.Visibility>
+                </TextBlock>
+                <ListBox ItemsSource="{Binding Results}" SelectedItem="{Binding SelectedResult}" Style="{StaticResource PlainListBox}" Margin="0,12,0,0" MaxHeight="520"
+                         ScrollViewer.VerticalScrollBarVisibility="Auto" AutomationProperties.Name="Applications" AutomationProperties.AutomationId="ApplicationResults">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate DataType="{x:Type wizard:ApplicationResultItem}">
+                            <StackPanel>
+                                <Grid>
+                                    <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Margin="0,0,130,0" />
+                                    <controls:StatusBadge HorizontalAlignment="Right" Kind="{Binding PointerKind}" Text="{Binding PointerLabel}" />
+                                </Grid>
+                                <TextBlock Style="{StaticResource CaptionText}"><Run Text="App ID " /><Run Text="{Binding AppId, Mode=OneWay}" FontFamily="{StaticResource MonoFont}" /></TextBlock>
+                                <TextBlock Style="{StaticResource CaptionText}"><Run Text="Object ID " /><Run Text="{Binding ObjectId, Mode=OneWay}" FontFamily="{StaticResource MonoFont}" /><Run Text="  ·  " /><Run Text="{Binding TypeLabel, Mode=OneWay}" /></TextBlock>
+                                <TextBlock Text="{Binding MatchNote}" Style="{StaticResource CaptionText}" Margin="0,4,0,0" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"
+                                           Visibility="{Binding MatchNote, Converter={StaticResource NullToVisibility}}" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </StackPanel>
+
+            <Border Grid.Column="2" Style="{StaticResource SubtleCard}" Padding="16" VerticalAlignment="Top">
+                <Grid>
+                    <TextBlock Text="Select an application to validate its identity." Style="{StaticResource SecondaryText}"
+                               Visibility="{Binding Details, Converter={StaticResource NullToVisibility}, ConverterParameter=Invert}" />
+                    <StackPanel Visibility="{Binding Details, Converter={StaticResource NullToVisibility}}">
+                        <TextBlock Text="{Binding Details.ServicePrincipal.DisplayName}" Style="{StaticResource SubsectionTitleText}" FontSize="16" />
+                        <ui:InfoBar Margin="0,10,0,0" Severity="Error" IsClosable="False" IsOpen="True" Title="This application cannot be configured"
+                                    Message="{Binding Details.BlockingError}" Visibility="{Binding Details.BlockingError, Converter={StaticResource NullToVisibility}}" />
+                        <TextBlock Text="Application (client) ID" Style="{StaticResource LabelText}" Margin="0,12,0,2" />
+                        <controls:CopyableText Text="{Binding Details.ServicePrincipal.AppId}" />
+                        <TextBlock Text="Service principal object ID (Enterprise Application)" Style="{StaticResource LabelText}" Margin="0,8,0,2" />
+                        <controls:CopyableText Text="{Binding Details.ServicePrincipal.ObjectId}" />
+                        <TextBlock Text="Tenant" Style="{StaticResource LabelText}" Margin="0,8,0,2" />
+                        <TextBlock Text="{Binding TenantLabel}" Style="{StaticResource BodyText}" />
+                        <TextBlock Text="Exchange service principal pointer" Style="{StaticResource LabelText}" Margin="0,8,0,2" />
+                        <StackPanel Orientation="Horizontal">
+                            <controls:StatusGlyph Kind="{Binding PointerKind}" Width="16" Height="16" VerticalAlignment="Top" Margin="0,2,0,0" />
+                            <TextBlock Text="{Binding PointerLabel}" Style="{StaticResource BodyText}" Margin="8,0,0,0" MaxWidth="460" />
+                        </StackPanel>
+                        <ItemsControl ItemsSource="{Binding Notes}" Margin="0,8,0,0">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <ui:InfoBar Severity="Warning" IsClosable="False" IsOpen="True" Message="{Binding}" Margin="0,0,0,6" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Text="Consented application permissions (Microsoft Entra ID)" Style="{StaticResource LabelText}" Margin="0,12,0,4" />
+                        <TextBlock Text="{Binding Details.GrantsError}" Style="{StaticResource CaptionText}" Foreground="{DynamicResource SystemFillColorCautionBrush}"
+                                   Visibility="{Binding Details.GrantsError, Converter={StaticResource NullToVisibility}}" />
+                        <TextBlock Text="None." Style="{StaticResource CaptionText}" Visibility="{Binding Grants.Count, Converter={StaticResource CountToVisibility}, ConverterParameter=Invert}" />
+                        <ItemsControl ItemsSource="{Binding Grants}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type pages:GrantItem}">
+                                    <Grid Margin="0,0,0,6" ToolTip="{Binding Explanation}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock><Run Text="{Binding Permission, Mode=OneWay}" FontFamily="{StaticResource MonoFont}" FontWeight="SemiBold" /><Run Text="  " /><Run Text="{Binding Resource, Mode=OneWay}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" /></TextBlock>
+                                        <controls:StatusBadge Grid.Column="1" Kind="{Binding Kind}" Text="{Binding Reach}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+    </DataTemplate>
+
+    <!-- Step 2: mailboxes -->
+    <DataTemplate DataType="{x:Type wizard:MailboxesStepViewModel}">
+        <StackPanel>
+            <ui:InfoBar Severity="Informational" IsClosable="False" IsOpen="True" Margin="0,0,0,16"
+                        Message="Accepted: UserMailbox and SharedMailbox. Groups, Microsoft 365 groups, mail users, contacts and resource mailboxes are rejected with an explanation. Every mailbox is resolved in Exchange Online and its actual recipient type is validated." />
+            <ContentControl Content="{Binding Picker}" Focusable="False" />
+        </StackPanel>
+    </DataTemplate>
+
+    <!-- Step 3: permissions -->
+    <DataTemplate DataType="{x:Type wizard:PermissionsStepViewModel}">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="20" />
+                <ColumnDefinition Width="320" />
+            </Grid.ColumnDefinitions>
+            <StackPanel>
+                <CheckBox Content="Show curated roles that are not available in this tenant" IsChecked="{Binding ShowUnavailable}" Margin="0,0,0,12" />
+                <ItemsControl ItemsSource="{Binding Groups}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type wizard:RoleGroupItem}">
+                            <StackPanel Margin="0,0,0,16">
+                                <TextBlock Text="{Binding Title}" Style="{StaticResource SubsectionTitleText}" Margin="0,0,0,8" />
+                                <ItemsControl ItemsSource="{Binding Roles}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="{x:Type wizard:RoleOptionItem}">
+                                            <Border Style="{StaticResource SubtleCard}" Margin="0,0,0,8">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <CheckBox IsChecked="{Binding IsSelected}" IsEnabled="{Binding IsAvailable}" VerticalAlignment="Top" MinWidth="0"
+                                                              AutomationProperties.Name="{Binding RoleName}" />
+                                                    <StackPanel Grid.Column="1" Margin="4,0,8,0">
+                                                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                                                        <TextBlock Style="{StaticResource CaptionText}"><Run Text="{Binding RoleName, Mode=OneWay}" FontFamily="{StaticResource MonoFont}" /><Run Text="  ·  " /><Run Text="{Binding ApiPermissions, Mode=OneWay}" /></TextBlock>
+                                                        <TextBlock Text="{Binding Explanation}" Style="{StaticResource BodyText}" FontSize="13" Margin="0,6,0,0" />
+                                                        <TextBlock Style="{StaticResource CaptionText}" Margin="0,4,0,0"><Run Text="Capabilities: " FontWeight="SemiBold" /><Run Text="{Binding CapabilitiesText, Mode=OneWay}" /></TextBlock>
+                                                        <TextBlock Style="{StaticResource CaptionText}" Margin="0,2,0,0"><Run Text="Security: " FontWeight="SemiBold" /><Run Text="{Binding SecurityImplications, Mode=OneWay}" /></TextBlock>
+                                                        <TextBlock Text="Not available in the connected tenant." Style="{StaticResource CaptionText}" Foreground="{DynamicResource SystemFillColorCautionBrush}"
+                                                                   Visibility="{Binding IsAvailable, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}" />
+                                                    </StackPanel>
+                                                    <controls:StatusBadge Grid.Column="2" Kind="{Binding PrivilegeKind}" Text="{Binding PrivilegeLabel}" VerticalAlignment="Top" />
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+            <StackPanel Grid.Column="2">
+                <Border Style="{StaticResource SubtleCard}" Padding="14">
+                    <StackPanel>
+                        <TextBlock Text="Selection" Style="{StaticResource SubsectionTitleText}" />
+                        <TextBlock Text="{Binding SelectionSummary}" Style="{StaticResource CaptionText}" Margin="0,4,0,0" />
+                    </StackPanel>
+                </Border>
+                <TextBlock Text="Least-privilege review" Style="{StaticResource SubsectionTitleText}" Margin="0,16,0,8" />
+                <TextBlock Text="No concerns for the current selection." Style="{StaticResource CaptionText}" Visibility="{Binding Advice.Count, Converter={StaticResource CountToVisibility}, ConverterParameter=Invert}" />
+                <ItemsControl ItemsSource="{Binding Advice}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type wizard:AdviceItem}">
+                            <Grid Margin="0,0,0,10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <controls:StatusGlyph Kind="{Binding Kind}" Width="16" Height="16" VerticalAlignment="Top" Margin="0,2,0,0" />
+                                <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" FontSize="13" />
+                                    <TextBlock Text="{Binding Detail}" Style="{StaticResource CaptionText}" />
+                                </StackPanel>
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </Grid>
+    </DataTemplate>
+
+    <!-- Step 4: validation -->
+    <DataTemplate DataType="{x:Type wizard:ValidationStepViewModel}">
+        <StackPanel>
+            <Border Style="{StaticResource SubtleCard}" Margin="0,0,0,12" Visibility="{Binding Verdict, Converter={StaticResource NullToVisibility}}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <controls:StatusGlyph Kind="{Binding VerdictKind}" />
+                    <StackPanel Grid.Column="1" Margin="10,0,0,0">
+                        <TextBlock Text="{Binding Verdict}" FontWeight="SemiBold" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
+                        <TextBlock Text="{Binding Summary}" Style="{StaticResource CaptionText}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal">
+                        <ui:Button Content="Re-run checks" Icon="{ui:SymbolIcon ArrowClockwise24}" Command="{Binding RunCommand}" Margin="0,0,8,0" />
+                        <ui:Button Content="Reconnect &amp; re-run" Icon="{ui:SymbolIcon ArrowSync24}" Command="{Binding ReconnectAndRunCommand}"
+                                   ToolTip="After activating a role in Privileged Identity Management, reconnect so Exchange applies it" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+            <ItemsControl ItemsSource="{Binding FilterErrors}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <ui:InfoBar Severity="Error" IsClosable="False" IsOpen="True" Message="{Binding}" Margin="0,0,0,6" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <ItemsControl ItemsSource="{Binding Checks}" ItemTemplate="{StaticResource CheckItemTemplate}" AutomationProperties.Name="Preflight checks"
+                          AutomationProperties.AutomationId="PreflightChecks" />
+            <Border Style="{StaticResource Card}" Margin="0,8,0,0" BorderBrush="{DynamicResource SystemFillColorCautionBrush}"
+                    Visibility="{Binding RequiresAcknowledgement, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel>
+                    <TextBlock Text="Acknowledgement required" Style="{StaticResource SubsectionTitleText}" />
+                    <CheckBox Margin="0,8,0,0" IsChecked="{Binding IsAcknowledged}" AutomationProperties.AutomationId="AcknowledgeRisk">
+                        <TextBlock Text="{Binding AcknowledgementText}" TextWrapping="Wrap" />
+                    </CheckBox>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </DataTemplate>
+
+    <!-- Step 5: scope -->
+    <DataTemplate DataType="{x:Type wizard:ScopeStepViewModel}">
+        <StackPanel>
+            <TextBlock Text="Management scope name" Style="{StaticResource LabelText}" />
+            <ui:TextBox Text="{Binding ScopeName, UpdateSourceTrigger=PropertyChanged, Delay=300}" FontFamily="{StaticResource MonoFont}" MaxWidth="560" HorizontalAlignment="Left" MinWidth="420"
+                        IsReadOnly="{Binding IsModify}" AutomationProperties.Name="Scope name" AutomationProperties.AutomationId="ScopeName" />
+            <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                <controls:StatusGlyph Kind="{Binding NameKind}" Width="16" Height="16" />
+                <TextBlock Text="{Binding NameMessage}" Style="{StaticResource CaptionText}" Margin="8,0,0,0" MaxWidth="820" />
+            </StackPanel>
+            <Border Style="{StaticResource SubtleCard}" Margin="0,10,0,0" HorizontalAlignment="Left" Visibility="{Binding EquivalentScopeName, Converter={StaticResource NullToVisibility}}">
+                <StackPanel Orientation="Horizontal">
+                    <ui:SymbolIcon Symbol="Lightbulb24" FontSize="16" />
+                    <TextBlock Margin="8,0,12,0" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="560"><Run Text="Existing scope " /><Run Text="{Binding EquivalentScopeName, Mode=OneWay}" FontWeight="SemiBold" /><Run Text=" already has exactly this membership. Reusing it avoids a duplicate scope." /></TextBlock>
+                    <ui:Button Content="Reuse it" Command="{Binding UseEquivalentScopeCommand}" />
+                </StackPanel>
+            </Border>
+
+            <TextBlock Text="Recipient restriction filter" Style="{StaticResource LabelText}" Margin="0,18,0,4" />
+            <Border Style="{StaticResource CodeBlock}">
+                <controls:CopyableText Text="{Binding Filter}" AutomationProperties.Name="Recipient restriction filter" />
+            </Border>
+            <TextBlock Style="{StaticResource CaptionText}" Margin="0,6,0,0"><Run Text="Strategy: " FontWeight="SemiBold" /><Run Text="{Binding StrategyLabel, Mode=OneWay}" /><Run Text=". " /><Run Text="{Binding StrategyExplanation, Mode=OneWay}" /></TextBlock>
+
+            <Border Style="{StaticResource SubtleCard}" Margin="0,18,0,0">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <controls:StatusGlyph Kind="{Binding VerificationKind}" />
+                    <TextBlock Grid.Column="1" Text="{Binding VerificationMessage}" Margin="10,0,8,0" TextWrapping="Wrap" FontWeight="SemiBold" VerticalAlignment="Center"
+                               AutomationProperties.AutomationId="ScopeVerification" />
+                    <ui:Button Grid.Column="2" Content="Verify again" Icon="{ui:SymbolIcon ArrowClockwise24}" Command="{Binding ReverifyCommand}" />
+                </Grid>
+            </Border>
+
+            <TextBlock Text="Unexpected matches (not selected)" Style="{StaticResource LabelText}" Margin="0,14,0,4" Foreground="{DynamicResource SystemFillColorCriticalBrush}"
+                       Visibility="{Binding Unexpected.Count, Converter={StaticResource CountToVisibility}}" />
+            <ItemsControl ItemsSource="{Binding Unexpected}" ItemTemplate="{StaticResource RecipientListTemplate}" />
+            <TextBlock Text="Selected but not matched" Style="{StaticResource LabelText}" Margin="0,14,0,4" Foreground="{DynamicResource SystemFillColorCriticalBrush}"
+                       Visibility="{Binding Missing.Count, Converter={StaticResource CountToVisibility}}" />
+            <ItemsControl ItemsSource="{Binding Missing}" ItemTemplate="{StaticResource RecipientListTemplate}" />
+            <TextBlock Text="Recipients resolved by Exchange Online" Style="{StaticResource LabelText}" Margin="0,14,0,4" />
+            <ItemsControl ItemsSource="{Binding Matched}" ItemTemplate="{StaticResource RecipientListTemplate}" />
+        </StackPanel>
+    </DataTemplate>
+
+    <!-- Step 6: review -->
+    <DataTemplate DataType="{x:Type wizard:ReviewStepViewModel}">
+        <StackPanel>
+            <Border Style="{StaticResource SubtleCard}" Margin="0,0,0,16">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <controls:StatusGlyph Kind="{Binding ValidationKind}" />
+                    <TextBlock Grid.Column="1" Text="{Binding ValidationMessage}" Margin="10,0,8,0" TextWrapping="Wrap" VerticalAlignment="Center" FontWeight="SemiBold"
+                               AutomationProperties.LiveSetting="Polite" AutomationProperties.AutomationId="ValidationMessage" />
+                    <ui:Button Grid.Column="2" Appearance="Primary" Content="Validate configuration" Icon="{ui:SymbolIcon ShieldCheckmark24}" Command="{Binding ValidateCommand}"
+                               AutomationProperties.AutomationId="ValidateConfiguration" />
+                </Grid>
+            </Border>
+
+            <TextBlock Text="Identity" Style="{StaticResource SubsectionTitleText}" Margin="0,0,0,6" />
+            <Border Style="{StaticResource SubtleCard}" Margin="0,0,0,14">
+                <ItemsControl ItemsSource="{Binding Identity}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type shared:FactItem}">
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="220" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="{Binding Label}" Style="{StaticResource CaptionText}" VerticalAlignment="Center" />
+                                <TextBox Grid.Column="1" Text="{Binding Value, Mode=OneWay}" Style="{StaticResource ReadOnlyCodeBox}" FontSize="12.5" TextWrapping="NoWrap" />
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Border>
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="20" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock Text="Roles" Style="{StaticResource SubsectionTitleText}" Margin="0,0,0,6" />
+                    <ItemsControl ItemsSource="{Binding Roles}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}" Style="{StaticResource CaptionText}" Margin="0,0,0,2" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Text="Existing configuration" Style="{StaticResource SubsectionTitleText}" Margin="0,14,0,6" />
+                    <ItemsControl ItemsSource="{Binding ExistingConfiguration}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}" Style="{StaticResource CaptionText}" Margin="0,0,0,2" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+                <StackPanel Grid.Column="2">
+                    <TextBlock Text="Mailboxes" Style="{StaticResource SubsectionTitleText}" Margin="0,0,0,6" />
+                    <ItemsControl ItemsSource="{Binding Mailboxes}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}" Style="{StaticResource CaptionText}" Margin="0,0,0,2" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Text="Management scope" Style="{StaticResource SubsectionTitleText}" Margin="0,14,0,6" />
+                    <TextBlock Text="{Binding ScopeName}" Style="{StaticResource MonoText}" FontWeight="SemiBold" />
+                    <Border Style="{StaticResource CodeBlock}" Margin="0,6,0,0">
+                        <TextBox Text="{Binding Filter, Mode=OneWay}" Style="{StaticResource ReadOnlyCodeBox}" />
+                    </Border>
+                    <TextBlock Text="Expected recipient matches" Style="{StaticResource SubsectionTitleText}" Margin="0,14,0,6" />
+                    <ItemsControl ItemsSource="{Binding ExpectedMatches}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}" Style="{StaticResource CaptionText}" Margin="0,0,0,2" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Grid>
+
+            <Border Style="{StaticResource SubtleCard}" Margin="0,16,0,0">
+                <controls:StatusMessage Kind="{Binding SecurityKind}" Text="{Binding SecurityVerdict}" IsEmphasized="True" />
+            </Border>
+
+            <TextBlock Style="{StaticResource SubsectionTitleText}" Margin="0,16,0,6"><Run Text="Planned changes  " /><Run Text="{Binding ChangeSummary, Mode=OneWay}" FontWeight="Normal" Foreground="{DynamicResource TextFillColorSecondaryBrush}" /></TextBlock>
+            <ItemsControl ItemsSource="{Binding Conflicts}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type planning:PlanConflict}">
+                        <ui:InfoBar Severity="Error" IsClosable="False" IsOpen="True" Title="{Binding Title}" Message="{Binding Detail}" Margin="0,0,0,8" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <ItemsControl ItemsSource="{Binding Operations}" ItemTemplate="{StaticResource OperationItemTemplate}" AutomationProperties.Name="Planned operations" />
+
+            <TextBlock Text="Security concerns and validation outcomes" Style="{StaticResource SubsectionTitleText}" Margin="0,14,0,6"
+                       Visibility="{Binding Concerns.Count, Converter={StaticResource CountToVisibility}}" />
+            <ItemsControl ItemsSource="{Binding Concerns}" ItemTemplate="{StaticResource CheckItemTemplate}" />
+
+            <Grid Margin="0,14,0,6">
+                <TextBlock Text="PowerShell preview" Style="{StaticResource SubsectionTitleText}" />
+                <ui:Button HorizontalAlignment="Right" Content="Copy" Icon="{ui:SymbolIcon Copy24}" Command="{Binding CopyScriptCommand}" />
+            </Grid>
+            <TextBlock Style="{StaticResource CaptionText}" Margin="0,0,0,6"
+                       Text="Exactly the commands the execution engine runs, in order. They are executed with typed parameter binding in an isolated PowerShell 7 host, never as script text." />
+            <Border Style="{StaticResource CodeBlock}">
+                <TextBox Text="{Binding Script, Mode=OneWay}" Style="{StaticResource ReadOnlyCodeBox}" TextWrapping="NoWrap" HorizontalScrollBarVisibility="Auto"
+                         AutomationProperties.Name="PowerShell preview" AutomationProperties.AutomationId="PowerShellPreview" />
+            </Border>
+        </StackPanel>
+    </DataTemplate>
+
+    <!-- Step 7: execute -->
+    <DataTemplate DataType="{x:Type wizard:ExecuteStepViewModel}">
+        <StackPanel>
+            <Border Style="{StaticResource Card}" Background="{DynamicResource SystemFillColorAttentionBackgroundBrush}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <ui:SymbolIcon Symbol="Building24" FontSize="28" VerticalAlignment="Top" Foreground="{DynamicResource SystemAccentColorPrimaryBrush}" />
+                    <StackPanel Grid.Column="1" Margin="14,0,0,0">
+                        <TextBlock Text="Target tenant" Style="{StaticResource LabelText}" />
+                        <TextBlock Text="{Binding TenantName}" FontSize="20" FontWeight="SemiBold" AutomationProperties.AutomationId="ExecuteTenantName" />
+                        <TextBlock Text="{Binding TenantId}" FontFamily="{StaticResource MonoFont}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <TextBlock Text="{Binding PlanSummary}" Style="{StaticResource BodyText}" Margin="0,8,0,0" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <CheckBox IsChecked="{Binding IsConfirmed}" Margin="0,0,0,12" AutomationProperties.AutomationId="ConfirmExecution">
+                <TextBlock TextWrapping="Wrap"><Run Text="I have reviewed the planned changes for tenant " /><Run Text="{Binding TenantName, Mode=OneWay}" FontWeight="SemiBold" /><Run Text=" and authorize their execution." /></TextBlock>
+            </CheckBox>
+            <WrapPanel Margin="0,0,0,16">
+                <ui:Button Appearance="Primary" Content="Execute changes" Icon="{ui:SymbolIcon Play24}" Command="{Binding ExecuteCommand}" Margin="0,0,8,8"
+                           AutomationProperties.AutomationId="ExecuteChanges" />
+                <ui:Button Content="Dry run" Icon="{ui:SymbolIcon Beaker24}" Command="{Binding DryRunCommand}" Margin="0,0,8,8"
+                           ToolTip="Re-validate against the live tenant and walk the plan without executing any write command" />
+                <ui:Button Content="Stop after current step" Icon="{ui:SymbolIcon Stop24}" Command="{Binding StopCommand}" Margin="0,0,8,8"
+                           Visibility="{Binding IsExecuting, Converter={StaticResource BoolToVisibility}}" />
+                <ui:Button Content="Back to review" Icon="{ui:SymbolIcon ArrowLeft24}" Command="{Binding RevalidateCommand}" Margin="0,0,8,8"
+                           IsEnabled="{Binding IsExecuting, Converter={StaticResource InverseBool}}" />
+            </WrapPanel>
+
+            <Border Style="{StaticResource SubtleCard}" Margin="0,0,0,16" Visibility="{Binding OutcomeLabel, Converter={StaticResource NullToVisibility}}"
+                    AutomationProperties.LiveSetting="Assertive">
+                <StackPanel>
+                    <controls:StatusMessage Kind="{Binding OutcomeKind}" Text="{Binding OutcomeLabel}" IsEmphasized="True" AutomationProperties.AutomationId="ExecutionOutcome" />
+                    <WrapPanel Margin="30,10,0,0">
+                        <ui:Button Content="Open report" Icon="{ui:SymbolIcon DocumentData24}" Command="{Binding OpenReportCommand}" Margin="0,0,8,0"
+                                   Visibility="{Binding ReportPath, Converter={StaticResource NullToVisibility}}" />
+                        <ui:Button Appearance="Caution" Content="Remove objects created by this run…" Icon="{ui:SymbolIcon ArrowUndo24}" Command="{Binding CompensateCommand}"
+                                   Visibility="{Binding CanCompensate, Converter={StaticResource BoolToVisibility}}" />
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+
+            <TextBlock Text="Progress" Style="{StaticResource SubsectionTitleText}" Margin="0,0,0,8" />
+            <ItemsControl ItemsSource="{Binding Steps}" AutomationProperties.Name="Execution progress" AutomationProperties.AutomationId="ExecutionSteps">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type shared:ExecutionStepItem}">
+                        <Border BorderThickness="0,0,0,1" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" Padding="0,10">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <controls:StatusGlyph Kind="{Binding Kind}" VerticalAlignment="Top" />
+                                <StackPanel Grid.Column="1" Margin="12,0,8,0">
+                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding Message}" Style="{StaticResource CaptionText}" />
+                                    <TextBlock Text="{Binding Command}" Style="{StaticResource MonoText}" FontSize="11.5" Margin="0,4,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                               Visibility="{Binding Command, Converter={StaticResource NullToVisibility}}" />
+                                    <Expander Header="Technical details" Margin="0,4,0,0" Style="{StaticResource SubtleExpander}" Visibility="{Binding ErrorDetail, Converter={StaticResource NullToVisibility}}">
+                                        <TextBox Text="{Binding ErrorDetail, Mode=OneWay}" Style="{StaticResource ReadOnlyCodeBox}" Margin="0,6,0,0" />
+                                    </Expander>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" HorizontalAlignment="Right">
+                                    <controls:StatusBadge Kind="{Binding Kind}" Text="{Binding StatusLabel}" HorizontalAlignment="Right" />
+                                    <TextBlock Text="{Binding Duration}" Style="{StaticResource CaptionText}" HorizontalAlignment="Right" Margin="0,4,0,0" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+    </DataTemplate>
+
+    <!-- Step 8: verify -->
+    <DataTemplate DataType="{x:Type wizard:VerifyStepViewModel}">
+        <StackPanel>
+            <ui:InfoBar Severity="Informational" IsClosable="False" IsOpen="True" Margin="0,0,0,16" Title="About this verification"
+                        Message="Test-ServicePrincipalAuthorization evaluates Exchange RBAC only and bypasses the authorization cache. Real API calls by the application may reflect changes only after 30 minutes to 2 hours. Tenant-wide Microsoft Entra ID permissions are combined into the verdict separately." />
+
+            <TextBlock Text="Positive tests (every intended mailbox)" Style="{StaticResource SubsectionTitleText}" Margin="0,0,0,6" />
+            <ItemsControl ItemsSource="{Binding Positive}" Margin="0,0,0,16">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                            <ui:SymbolIcon Symbol="Mail24" FontSize="14" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                            <TextBlock Text="{Binding}" Style="{StaticResource CaptionText}" Margin="8,0,0,0" />
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Expander Header="Add negative tests: mailboxes that must NOT be accessible (recommended)" Style="{StaticResource SubtleExpander}" IsExpanded="True">
+                <ContentControl Content="{Binding NegativePicker}" Focusable="False" Margin="0,8,0,0" />
+            </Expander>
+
+            <WrapPanel Margin="0,16,0,16">
+                <ui:Button Appearance="Primary" Content="Run authorization tests" Icon="{ui:SymbolIcon Beaker24}" Command="{Binding RunTestsCommand}" Margin="0,0,8,8"
+                           AutomationProperties.AutomationId="WizardRunTests" />
+                <ui:Button Content="Open report" Icon="{ui:SymbolIcon DocumentData24}" Command="{Binding OpenReportCommand}" Margin="0,0,8,8"
+                           Visibility="{Binding ReportPath, Converter={StaticResource NullToVisibility}}" />
+                <ui:Button Content="Export report…" Icon="{ui:SymbolIcon ArrowExportLtr24}" Command="{Binding ExportReportCommand}" Margin="0,0,8,8" />
+                <ui:Button Content="Finish" Icon="{ui:SymbolIcon Checkmark24}" Command="{Binding FinishCommand}" Margin="0,0,8,8" />
+                <ui:Button Appearance="Transparent" Content="Configure another application" Command="{Binding StartNewCommand}" Margin="0,0,8,8" />
+            </WrapPanel>
+
+            <Border Style="{StaticResource SubtleCard}" Margin="0,0,0,12" Visibility="{Binding OverallLabel, Converter={StaticResource NullToVisibility}}">
+                <StackPanel>
+                    <controls:StatusMessage Kind="{Binding OverallKind}" Text="{Binding OverallLabel}" IsEmphasized="True" AutomationProperties.AutomationId="VerifyOverall" />
+                    <controls:StatusMessage Margin="0,8,0,0" Kind="{Binding SecurityKind}" Text="{Binding SecurityVerdict}"
+                                            Visibility="{Binding SecurityVerdict, Converter={StaticResource NullToVisibility}}" />
+                    <TextBlock Text="{Binding ReportPath, StringFormat='Report saved: {0}'}" Style="{StaticResource CaptionText}" Margin="30,8,0,0"
+                               Visibility="{Binding ReportPath, Converter={StaticResource NullToVisibility}}" />
+                </StackPanel>
+            </Border>
+
+            <DataGrid ItemsSource="{Binding Results}" Style="{StaticResource StudioDataGrid}" RowHeight="56" MaxHeight="520"
+                      Visibility="{Binding Results.Count, Converter={StaticResource CountToVisibility}}" AutomationProperties.Name="Authorization test results">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Mailbox" Binding="{Binding Mailbox}" Width="1.4*" />
+                    <DataGridTextColumn Header="Expectation" Binding="{Binding Expectation}" Width="Auto" />
+                    <DataGridTextColumn Header="Role" Binding="{Binding Role}" Width="1.2*" />
+                    <DataGridTextColumn Header="Exchange RBAC" Binding="{Binding ExchangeResult}" Width="Auto" />
+                    <DataGridTextColumn Header="Entra ID" Binding="{Binding EntraOverride}" Width="Auto" />
+                    <DataGridTemplateColumn Header="Verdict" Width="Auto">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate DataType="{x:Type pages:TestOutcomeItem}">
+                                <controls:StatusBadge Kind="{Binding Kind}" Text="{Binding Verdict}" Margin="4,0" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Explanation" Width="2.4*">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate DataType="{x:Type pages:TestOutcomeItem}">
+                                <TextBlock Text="{Binding Explanation}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="4,0" FontSize="12.5" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+            <ItemsControl ItemsSource="{Binding Errors}" Margin="0,8,0,0">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding}" Style="{StaticResource CaptionText}" Foreground="{DynamicResource SystemFillColorCriticalBrush}" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <ItemsControl ItemsSource="{Binding Notes}" Margin="0,8,0,0">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                            <ui:SymbolIcon Symbol="Info24" FontSize="14" VerticalAlignment="Top" Foreground="{DynamicResource SystemAccentColorPrimaryBrush}" />
+                            <TextBlock Text="{Binding}" Style="{StaticResource CaptionText}" Margin="8,0,0,0" MaxWidth="900" />
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+    </DataTemplate>
+</ResourceDictionary>

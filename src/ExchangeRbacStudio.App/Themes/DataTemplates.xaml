@@ -1,0 +1,138 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                    xmlns:controls="clr-namespace:ExchangeRbacStudio.App.Controls"
+                    xmlns:pages="clr-namespace:ExchangeRbacStudio.App.ViewModels.Pages"
+                    xmlns:shared="clr-namespace:ExchangeRbacStudio.App.ViewModels.Shared"
+                    xmlns:wizard="clr-namespace:ExchangeRbacStudio.App.ViewModels.Wizard"
+                    xmlns:views="clr-namespace:ExchangeRbacStudio.App.Views.Pages"
+                    xmlns:wviews="clr-namespace:ExchangeRbacStudio.App.Views.Wizard">
+
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="pack://application:,,,/ExchangeRbacStudio;component/Views/Wizard/WizardStepTemplates.xaml" />
+    </ResourceDictionary.MergedDictionaries>
+
+    <!-- Pages -->
+    <DataTemplate DataType="{x:Type pages:DashboardViewModel}"><views:DashboardView /></DataTemplate>
+    <DataTemplate DataType="{x:Type pages:ApplicationsViewModel}"><views:ApplicationsView /></DataTemplate>
+    <DataTemplate DataType="{x:Type pages:ApplicationDetailViewModel}"><views:ApplicationDetailView /></DataTemplate>
+    <DataTemplate DataType="{x:Type pages:ScopesViewModel}"><views:ScopesView /></DataTemplate>
+    <DataTemplate DataType="{x:Type pages:RoleAssignmentsViewModel}"><views:RoleAssignmentsView /></DataTemplate>
+    <DataTemplate DataType="{x:Type pages:AuthorizationTesterViewModel}"><views:AuthorizationTesterView /></DataTemplate>
+    <DataTemplate DataType="{x:Type pages:ChangeHistoryViewModel}"><views:ChangeHistoryView /></DataTemplate>
+    <DataTemplate DataType="{x:Type pages:SettingsViewModel}"><views:SettingsView /></DataTemplate>
+    <DataTemplate DataType="{x:Type wizard:ConfigureAccessWizardViewModel}"><wviews:ConfigureAccessWizardView /></DataTemplate>
+
+    <!-- Reusable mailbox picker -->
+    <DataTemplate DataType="{x:Type shared:MailboxPickerViewModel}">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="5*" MinWidth="300" />
+                <ColumnDefinition Width="20" />
+                <ColumnDefinition Width="6*" MinWidth="340" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Search and paste -->
+            <StackPanel Grid.Column="0">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <ui:TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="Search by address, display name or alias"
+                                Icon="{ui:SymbolIcon Search24}" ClearButtonEnabled="True" AutomationProperties.Name="Mailbox search" AutomationProperties.AutomationId="MailboxSearch">
+                        <ui:TextBox.InputBindings>
+                            <KeyBinding Key="Enter" Command="{Binding SearchCommand}" />
+                        </ui:TextBox.InputBindings>
+                    </ui:TextBox>
+                    <ui:Button Grid.Column="1" Margin="8,0,0,0" Content="Search" Command="{Binding SearchCommand}" />
+                </Grid>
+
+                <controls:LoadingIndicator Margin="0,10,0,0" Text="{Binding BusyMessage}" Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}" />
+                <controls:ErrorPanel Margin="0,10,0,0" Error="{Binding Error}" />
+
+                <TextBlock Margin="0,12,0,6" Style="{StaticResource CaptionText}" Text="No recipients match the search."
+                           Visibility="{Binding Results.Count, Converter={StaticResource CountToVisibility}, ConverterParameter=Invert}" />
+                <ListBox ItemsSource="{Binding Results}" Style="{StaticResource PlainListBox}" MaxHeight="360" Margin="0,8,0,0"
+                         ScrollViewer.VerticalScrollBarVisibility="Auto" AutomationProperties.Name="Search results">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate DataType="{x:Type shared:MailboxResultItem}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{Binding Address}" Style="{StaticResource CaptionText}" />
+                                    <controls:StatusBadge Margin="0,4,0,0" Kind="{Binding TypeKind}" Text="{Binding TypeLabel}" />
+                                    <TextBlock Text="{Binding Reason}" Style="{StaticResource CaptionText}" Margin="0,4,0,0" Foreground="{DynamicResource SystemFillColorCriticalBrush}"
+                                               Visibility="{Binding Reason, Converter={StaticResource NullToVisibility}}" />
+                                </StackPanel>
+                                <ui:Button Grid.Column="1" VerticalAlignment="Top" Content="Add" Icon="{ui:SymbolIcon Add24}" Command="{Binding AddCommand}"
+                                           AutomationProperties.Name="{Binding DisplayName, StringFormat='Add {0}'}" />
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+                <Expander Header="Add several mailboxes at once" Margin="0,12,0,0">
+                    <StackPanel Margin="0,8,0,0">
+                        <TextBlock Style="{StaticResource CaptionText}" Text="Paste addresses, aliases or GUIDs separated by new lines, commas or semicolons. Each is resolved and validated in Exchange Online." />
+                        <TextBox Margin="0,8,0,0" Text="{Binding PasteText, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" MinHeight="90" MaxHeight="180"
+                                 TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" FontFamily="{StaticResource MonoFont}" AutomationProperties.Name="Mailbox list" />
+                        <ui:Button Margin="0,8,0,0" Content="Resolve and add" Icon="{ui:SymbolIcon PeopleSearch24}" Command="{Binding AddPastedCommand}" />
+                        <ItemsControl ItemsSource="{Binding ResolutionMessages}" Margin="0,8,0,0">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type shared:ResolutionMessage}">
+                                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                                        <controls:StatusGlyph Kind="{Binding Kind}" Width="16" Height="16" />
+                                        <TextBlock Margin="8,0,0,0" TextWrapping="Wrap" MaxWidth="420" Style="{StaticResource CaptionText}"><Run Text="{Binding Input, Mode=OneWay}" FontWeight="SemiBold" /><Run Text=" — " /><Run Text="{Binding Message, Mode=OneWay}" /></TextBlock>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Expander>
+            </StackPanel>
+
+            <!-- Selection -->
+            <Border Grid.Column="2" Style="{StaticResource SubtleCard}" Padding="14" VerticalAlignment="Top">
+                <StackPanel>
+                    <Grid>
+                        <TextBlock Style="{StaticResource SubsectionTitleText}"><Run Text="Selected mailboxes (" /><Run Text="{Binding SelectedCount, Mode=OneWay}" /><Run Text=" of max " /><Run Text="{Binding MaxItems, Mode=OneWay}" /><Run Text=")" /></TextBlock>
+                        <ui:Button HorizontalAlignment="Right" Appearance="Transparent" Content="Clear" Command="{Binding ClearSelectionCommand}"
+                                   Visibility="{Binding SelectedCount, Converter={StaticResource CountToVisibility}}" />
+                    </Grid>
+                    <TextBlock Margin="0,8,0,0" Style="{StaticResource CaptionText}" Text="No mailboxes selected yet."
+                               Visibility="{Binding SelectedCount, Converter={StaticResource CountToVisibility}, ConverterParameter=Invert}" />
+                    <DataGrid ItemsSource="{Binding Selected}" Style="{StaticResource StudioDataGrid}" MinHeight="0" MaxHeight="420" Margin="0,8,0,0"
+                              Visibility="{Binding SelectedCount, Converter={StaticResource CountToVisibility}}" AutomationProperties.Name="Selected mailboxes"
+                              AutomationProperties.AutomationId="SelectedMailboxes">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Display name" Binding="{Binding DisplayName}" Width="*" />
+                            <DataGridTextColumn Header="Primary SMTP address" Binding="{Binding Address}" Width="1.4*" />
+                            <DataGridTextColumn Header="Type" Binding="{Binding TypeLabel}" Width="Auto" />
+                            <DataGridTextColumn Header="Exchange GUID" Binding="{Binding ExchangeGuid}" Width="Auto" FontFamily="{StaticResource MonoFont}" />
+                            <DataGridTemplateColumn Header="Validation" Width="Auto">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <controls:StatusBadge Kind="{Binding ValidationKind}" Text="{Binding ValidationLabel}" Margin="4,0" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Width="Auto">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <ui:Button Appearance="Transparent" Padding="6" Icon="{ui:SymbolIcon Delete24}" Command="{Binding RemoveCommand}"
+                                                   ToolTip="Remove" AutomationProperties.Name="{Binding DisplayName, StringFormat='Remove {0}'}" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </DataTemplate>
+</ResourceDictionary>
