@@ -104,7 +104,11 @@ public sealed class ViewRenderingTests
         await WpfTestHost.WaitUntilAsync(() => services.GetRequiredService<ShellViewModel>().IsPaneCompact, "compact pane at narrow width");
         window.Width = 1500;
         window.UpdateLayout();
-        await WpfTestHost.WaitUntilAsync(() => !services.GetRequiredService<ShellViewModel>().IsPaneCompact, "full pane at wide width");
+        // Windows keeps a resizable window within roughly the desktop size (GitHub-hosted runners have a 1024×768
+        // desktop), so check the layout rule against the width the window actually received.
+        var wideEnough = window.ActualWidth >= MainWindow.CompactPaneThreshold;
+        await WpfTestHost.WaitUntilAsync(() => services.GetRequiredService<ShellViewModel>().IsPaneCompact != wideEnough,
+            $"{(wideEnough ? "full" : "compact")} pane at actual width {window.ActualWidth:0} (desktop {SystemParameters.VirtualScreenWidth:0}×{SystemParameters.VirtualScreenHeight:0})");
 
         await services.ConnectFakesAsync();
         foreach (var key in Enum.GetValues<PageKey>().Where(k => k != PageKey.ApplicationDetail))

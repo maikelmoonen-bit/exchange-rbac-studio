@@ -7,7 +7,7 @@ namespace ExchangeRbacStudio.App.Views;
 
 public partial class MainWindow : FluentWindow
 {
-    private const double CompactPaneThreshold = 1180;
+    internal const double CompactPaneThreshold = 1180;
     private readonly ShellViewModel _shell;
 
     public MainWindow(ShellViewModel shell, ThemeService theme)
