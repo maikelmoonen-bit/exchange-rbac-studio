@@ -68,8 +68,8 @@ Every push to `main` and every pull request runs the full `build.ps1` pipeline o
 draft before publishing it.
 
 ```powershell
-git tag v1.0.1
-git push origin v1.0.1
+git tag 1.0.1
+git push origin 1.0.1
 ```
 
 ## Configuration

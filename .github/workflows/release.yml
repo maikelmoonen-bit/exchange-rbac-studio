@@ -1,10 +1,10 @@
 name: Release
 
-# Push a tag such as v1.0.1 to build, test and package that version. The release is created as a draft so it can be
-# reviewed before it is published.
+# Push a tag such as 1.0.1 (or v1.0.1) to build, test and package that version. The release is created as a draft so
+# it can be reviewed before it is published.
 on:
   push:
-    tags: ['v*.*.*']
+    tags: ['*.*.*', 'v*.*.*']
 
 permissions:
   contents: write
@@ -28,7 +28,7 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           $version = $env:TAG.TrimStart('v')
-          if ($version -notmatch '^\d+\.\d+\.\d+$') { throw "Tag '$env:TAG' is not of the form vMAJOR.MINOR.PATCH." }
+          if ($version -notmatch '^\d+\.\d+\.\d+$') { throw "Tag '$env:TAG' is not of the form MAJOR.MINOR.PATCH (optionally prefixed with v)." }
           "value=$version" >> $env:GITHUB_OUTPUT
 
       - name: Build, test and package

@@ -12,10 +12,13 @@
     <Copyright>Copyright (c) 2026 Maikel Moonen</Copyright>
     <Authors>Maikel Moonen</Authors>
     <RepositoryUrl>https://github.com/maikelmoonen-bit/exchange-rbac-studio</RepositoryUrl>
-    <Version>1.0.0</Version>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <FileVersion>1.0.0.0</FileVersion>
-    <InformationalVersion>1.0.0</InformationalVersion>
+    <!-- One version (MAJOR.MINOR.PATCH) drives all version attributes; build.ps1 and the release workflow override it. -->
+    <Version>1.0.1</Version>
+    <AssemblyVersion>$(Version).0</AssemblyVersion>
+    <FileVersion>$(Version).0</FileVersion>
+    <InformationalVersion>$(Version)</InformationalVersion>
+    <!-- Keep the displayed version plain (no "+<commit hash>" suffix added by the SDK in a git checkout). -->
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <!-- Nullable correctness is treated as a hard requirement across the solution. -->
     <WarningsAsErrors>$(WarningsAsErrors);nullable</WarningsAsErrors>
