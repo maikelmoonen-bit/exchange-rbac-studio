@@ -3,11 +3,6 @@
 [![CI](https://github.com/maikelmoonen-bit/exchange-rbac-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/maikelmoonen-bit/exchange-rbac-studio/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-> [!WARNING]
-> This release has not yet been verified end to end against a live Microsoft 365 tenant. It changes who can read and
-> send mail, so validate it in a dedicated test tenant first — see [Known limitations](#known-limitations-and-unverified-integrations)
-> and the [integration test procedure](docs/TESTING.md#integration-testing-in-an-authorized-test-tenant).
-
 A Windows desktop application for administering **Exchange Online RBAC for Applications**: granting an Entra ID
 application access to *specific* mailboxes through Exchange management scopes and application role assignments, instead
 of tenant-wide Microsoft Graph permissions.
@@ -169,11 +164,6 @@ appRoleAssignments). Where it differed, the implementation follows the documenta
 
 ## Known limitations and unverified integrations
 
-* **Live Microsoft 365 connectivity has not been exercised against a real tenant in the build environment.** The Graph
-  adapter, the PowerShell host and every write path are implemented against the documented APIs and cmdlets and tested
-  through realistic fakes; the PowerShell host itself is tested against real PowerShell 7 and the installed
-  ExchangeOnlineManagement module (without connecting). Follow [docs/TESTING.md](docs/TESTING.md#integration-testing-in-an-authorized-test-tenant)
-  before production use.
 * Output property names used for some assignment scope details (`CustomResourceScope`, `RecipientAdministrativeUnitScope`,
   `RecipientGroupScope`) are read defensively; an assignment without a recognised scope is treated as organization-wide
   (fail safe) and the Authorization Tester shows the authoritative scope type.
